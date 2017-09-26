@@ -2,8 +2,7 @@
 
 This repository contains all the code to reproduce our results from our recent publication:
 - Thomas Gerig, Andreas Morel-Forster, Clemens Blumer, Bernhard Egger, Marcel Lüthi, Sandro Schönborn and Thomas Vetter 
-["Morphable Face Models - An Open Framework"](https://arxiv.org/abs/1709.08398)
-
+["Morphable Face Models - An Open Framework"](https://arxiv.org/abs/1709.08398) 
 IN: arXiv preprint (2017)
 
 ### Overview
