@@ -32,7 +32,7 @@ pipeline-data
 
 If needed, you can change the location of the `pipeline-data` directory in the BU3DDataProvider.scala file.
 
-#### iii) Bu3DFE Database
+#### ii) Bu3DFE Database
 
 To register the BU-3DFE you have to acquire the dataset here:
 
