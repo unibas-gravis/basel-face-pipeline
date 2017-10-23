@@ -136,16 +136,16 @@ For those experiments you need the Basel Face Model 2009 and 2017, which can be 
 To run the 3D reconstructions from the Multi-PIE database, you may want to execute it multiple times in parallel
 since a single fit taks ~20 minutes:
 ```
-sbt -mem 5000 "fitting.experiments.RecognitionMultiPiePose
+sbt -mem 5000 "fitting.experiments.RecognitionMultiPiePose"
 ```
 And to calculate the recognition scores execute:
 ```
-sbt -mem 5000 "fitting.experiments.RecognitionEvaluation
+sbt -mem 5000 "fitting.experiments.RecognitionEvaluation"
 ```
 Those where the neutral scores. To perform the expression experiments, run:
 ```
-sbt -mem 5000 "fitting.experiments.RecognitionMultiPieExpression
-sbt -mem 5000 "fitting.experiments.RecognitionEvaluationEx
+sbt -mem 5000 "fitting.experiments.RecognitionMultiPieExpression"
+sbt -mem 5000 "fitting.experiments.RecognitionEvaluationEx"
 ```
 
 
