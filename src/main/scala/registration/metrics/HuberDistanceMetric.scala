@@ -22,44 +22,46 @@ import scalismo.image.{DifferentiableScalarImage, ScalarImage}
 import scalismo.numerics.Sampler
 import scalismo.registration.{ImageMetric, Transformation}
 
-case class HuberDistanceMetric[D <: Dim: NDSpace](sampler: Sampler[D]) extends ImageMetric[D] {
 
-
-  override val ndSpace = implicitly[NDSpace[D]]
-
-  def value(fixedImage: ScalarImage[D], movingImage: ScalarImage[D], transform: Transformation[D]) = {
-    val warpedImage = fixedImage.compose(transform)
-
-
-    def rhoHuber(v : Float ) : Float = {
-      val k = 1.345
-      if (v < k)
-        (v * v / 2f) / (1 + v * v)
-      else
-        (k * ( Math.abs(v) - k / 2 )).toFloat
-    }
-    integrator.integrateScalar((warpedImage - movingImage).andThen(rhoHuber _)) / integrator.sampler.volumeOfSampleRegion
-  }
-
-
-  def takeDerivativeWRTToTransform(fixedImage: DifferentiableScalarImage[D], movingImage: ScalarImage[D], transform: Transformation[D]) = {
-
-    def psiHuber(v : Float) : Float = {
-      val k = 1.345
-      if (v < k) v else (k * Math.signum(v)).toFloat
-    }
-
-    val movingGradientImage = fixedImage.differentiate
-    val warpedImage = fixedImage.compose(transform)
-    val dDMovingImage = (warpedImage - movingImage).andThen(psiHuber _) * (1.0 / sampler.volumeOfSampleRegion)
-
-    val fullMetricGradient = (x: Point[D]) => {
-      val domain = Domain.intersection(warpedImage.domain, dDMovingImage.domain)
-      if (domain.isDefinedAt(x))
-        Some(movingGradientImage(transform(x)).toFloatBreezeVector * dDMovingImage(x))
-      else None
-    }
-
-    fullMetricGradient
-  }
-}
+// use from scalismo
+//case class HuberDistanceMetric[D <: Dim: NDSpace](sampler: Sampler[D]) extends ImageMetric[D] {
+//
+//
+//  override val ndSpace = implicitly[NDSpace[D]]
+//
+//  def value(fixedImage: ScalarImage[D], movingImage: ScalarImage[D], transform: Transformation[D]) = {
+//    val warpedImage = fixedImage.compose(transform)
+//
+//
+//    def rhoHuber(v : Float ) : Float = {
+//      val k = 1.345
+//      if (v < k)
+//        (v * v / 2f) / (1 + v * v)
+//      else
+//        (k * ( Math.abs(v) - k / 2 )).toFloat
+//    }
+//    integrator.integrateScalar((warpedImage - movingImage).andThen(rhoHuber _)) / integrator.sampler.volumeOfSampleRegion
+//  }
+//
+//
+//  def takeDerivativeWRTToTransform(fixedImage: DifferentiableScalarImage[D], movingImage: ScalarImage[D], transform: Transformation[D]) = {
+//
+//    def psiHuber(v : Float) : Float = {
+//      val k = 1.345
+//      if (v < k) v else (k * Math.signum(v)).toFloat
+//    }
+//
+//    val movingGradientImage = fixedImage.differentiate
+//    val warpedImage = fixedImage.compose(transform)
+//    val dDMovingImage = (warpedImage - movingImage).andThen(psiHuber _) * (1.0 / sampler.volumeOfSampleRegion)
+//
+//    val fullMetricGradient = (x: Point[D]) => {
+//      val domain = Domain.intersection(warpedImage.domain, dDMovingImage.domain)
+//      if (domain.isDefinedAt(x))
+//        Some(movingGradientImage(transform(x)).toFloatBreezeVector * dDMovingImage(x))
+//      else None
+//    }
+//
+//    fullMetricGradient
+//  }
+//}

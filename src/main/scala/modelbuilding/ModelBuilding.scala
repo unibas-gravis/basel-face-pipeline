@@ -28,9 +28,11 @@ import scalismo.faces.render.Transform3D
 import scalismo.geometry.{Point, Vector, _3D}
 import scalismo.kernels.{DiagonalKernel, GaussianKernel, MatrixValuedPDKernel}
 import scalismo.mesh.{SurfacePointProperty, TriangleMesh, TriangleMesh3D}
-import scalismo.numerics.{UniformMeshSampler3D}
+import scalismo.numerics.UniformMeshSampler3D
 import scalismo.registration.{LandmarkRegistration, RigidTransformation}
 import scalismo.statisticalmodel.{GaussianProcess, LowRankGaussianProcess}
+import scalismo.utils.Random
+
 import scala.util.{Success, Try}
 
 object ModelBuilding {
@@ -45,6 +47,7 @@ object ModelBuilding {
 case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
 
   override def run() {
+    implicit val rng = Random(1024l)
     createMeshesWithVertexColor()
 //    buildMoMoExpress()
     buildMoMoExpress("face12_nomouth")
@@ -120,7 +123,7 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
    * Build a model from meshes with vertex color.
    * This step assumes that the registration was performed using the "bfm_nomouth" masked reference.
    */
-  def buildMoMoExpress(maskType: String = "bfm_nomouth"): Unit = {
+  def buildMoMoExpress(maskType: String = "bfm_nomouth")(implicit rng: Random): Unit = {
     println("Building model from meshes with vertex color...")
 
     val mask = {
@@ -139,8 +142,8 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
     buildModel(ids, otherExpressions, reference)
 
 
-    def buildModel(ids: Seq[dataProvider.Person], expressions: Seq[ExpressionType], reference: TriangleMesh3D) = {
-      val data: Seq[Try[(DiscreteField[_3D, RGBA], VertexColorMesh3D, Seq[NeutralWithExpression])]] = ids.zipWithIndex.map {
+    def buildModel(ids: Seq[dataProvider.Person], expressions: Seq[ExpressionType], reference: TriangleMesh3D)(implicit rng: Random) = {
+      val data: Seq[Try[(DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA], VertexColorMesh3D, Seq[NeutralWithExpression])]] = ids.zipWithIndex.map {
         case (id, idx) =>
           println(s"... loading data for ${id.id} (${idx + 1}/${ids.size})")
           prepareData(reference, expressions, id)
@@ -166,7 +169,7 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
       println(s"... ... exp rank: ${momo.expression.rank}")
 
 
-      val colors: Seq[DiscreteField[_3D, RGBA]] = data.collect({ case Success(e) => e._1 })
+      val colors: Seq[DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA]] = data.collect({ case Success(e) => e._1 })
 
       val colorModel = buildColorModel(reference, colors.toIndexedSeq, colors.size - 1)
       println("... color model is built ...")
@@ -259,7 +262,7 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
             NeutralWithExpression(neutral, alignedExpression)
         }.toIndexedSeq
 
-        val neutralColor = DiscreteField[_3D, RGBA](neutral.shape.pointSet, neutral.color.pointData)
+        val neutralColor = DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA](neutral.shape.pointSet, neutral.color.pointData)
         (
           neutralColor,
           neutral,
@@ -300,18 +303,18 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
    */
   def buildColorModel(
     referenceMesh: TriangleMesh3D,
-    colorFields: IndexedSeq[DiscreteField[_3D, RGBA]],
+    colorFields: IndexedSeq[DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA]],
     numberOfComponents: Int
-  ): PancakeDLRGP[_3D, RGB] = {
+  )(implicit rng:Random): PancakeDLRGP[_3D, UnstructuredPointsDomain[_3D], RGB] = {
 
     val domain = referenceMesh.pointSet
 
-    val meanRGBA = DiscreteField[_3D, RGBA](domain, saveMean(colorFields.map(_.data)))
+    val meanRGBA = DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA](domain, saveMean(colorFields.map(_.data)))
 
     val meanFreeColors = saveMeanFreeColors(colorFields.map(_.data), meanRGBA.data)
-    val meanFreeColorFields = meanFreeColors.map{ a => DiscreteField(domain, a) }
+    val meanFreeColorFields = meanFreeColors.map{ a => DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA](domain, a) }
 
-    val meanRGB = DiscreteField[_3D, RGB](domain, meanRGBA.data.map(_.toRGB))
+    val meanRGB = DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGB](domain, meanRGBA.data.map(_.toRGB))
 
     val kernel: MatrixValuedPDKernel[_3D] = ReducedEntryKernel(meanFreeColorFields)
     val gp: GaussianProcess[_3D, RGB] = GaussianProcess(meanRGB.interpolateNearestNeighbor(), kernel)
@@ -375,7 +378,7 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
    * @param colorFields Input data with possibly some data missing.
    */
   case class MissingEntryKernel(
-                                 colorFields: Seq[DiscreteField[_3D, RGBA]],
+                                 colorFields: Seq[DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA]],
                                  backupKernel: MatrixValuedPDKernel[_3D] = DiagonalKernel(GaussianKernel[_3D](10), 3) * 0.0001
                                ) extends MatrixValuedPDKernel[_3D] {
 
@@ -408,13 +411,13 @@ case class ModelBuilding(dataProvider: DataProvider)  extends PipelineStep {
     * Kernel estimating the covariance only on the available data.
     */
   case class ReducedEntryKernel(
-                                 colorFields: Seq[DiscreteField[_3D, RGBA]],
+                                 colorFields: Seq[DiscreteField[_3D, UnstructuredPointsDomain[_3D], RGBA]],
                                  backupKernel: MatrixValuedPDKernel[_3D] = DiagonalKernel(GaussianKernel[_3D](5), 3) * 0.1
                                ) extends MatrixValuedPDKernel[_3D] {
 
     val fs = colorFields.map(f => f.interpolateNearestNeighbor())
     private val originalDomain = colorFields.head.domain
-    val countEntries = DiscreteField(originalDomain,colorFields.foldLeft(
+    val countEntries = DiscreteField[_3D, UnstructuredPointsDomain[_3D], Int](originalDomain,colorFields.foldLeft(
       IndexedSeq.fill[Int](originalDomain.numberOfPoints)(0)
     ) { case (sum, field) =>
         field.data.map(c => if(c.a==1.0) 1 else 0).zip(sum).map(p => p._1+p._2)

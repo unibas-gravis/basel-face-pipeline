@@ -31,7 +31,7 @@ import scala.reflect.io.Path
 object QualitativeLFW extends App{
   scalismo.initialize()
   val seed = 1986L
-  implicit val rnd = new Random(seed)
+  implicit val rnd = Random(seed)
 
   def fitModel(model:MoMo, modelName: String) = {
     val targetsPath =  BU3DDataProvider.repositoryRoot + "/recognition-experiment/fit-lfw-qualitative/lfwSelection/"

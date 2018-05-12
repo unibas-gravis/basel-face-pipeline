@@ -29,7 +29,7 @@ import scalismo.statisticalmodel._
 case class BuildNeutralPrior(dataProvider: DataProvider) extends PipelineStep with StrictLogging {
 
 
-  def approximatePointSet(points: UnstructuredPointsDomain[_3D], D: Double, gp : GaussianProcess[_3D,Vector[_3D]], sc: StoppingCriterion) : (DiscreteLowRankGaussianProcess[_3D,Vector[_3D]],UnstructuredPointsDomain[_3D]) = {
+  def approximatePointSet(points: UnstructuredPointsDomain[_3D], D: Double, gp : GaussianProcess[_3D,Vector[_3D]], sc: StoppingCriterion) : (DiscreteLowRankGaussianProcess[_3D, UnstructuredPointsDomain[_3D], Vector[_3D]],UnstructuredPointsDomain[_3D]) = {
 
     def phiWithDim(i: Int, dim : Int, ptId : Int, phi: DenseMatrix[Double]) = {
       phi(ptId*3 + dim,i)
@@ -42,13 +42,13 @@ case class BuildNeutralPrior(dataProvider: DataProvider) extends PipelineStep wi
 
     val nPhi = phi.cols
 
-    val klBasis: DiscreteLowRankGaussianProcess.KLBasis[_3D, Vector[_3D]] = for(i <- 0 until nPhi) yield {
-      val v = DiscreteField[_3D,Vector[_3D]](points,points.pointsWithId.toIndexedSeq.map(f => phiVec(i,f._2,phi)))
+    val klBasis: DiscreteLowRankGaussianProcess.KLBasis[_3D, UnstructuredPointsDomain[_3D], Vector[_3D]] = for(i <- 0 until nPhi) yield {
+      val v = DiscreteField[_3D, UnstructuredPointsDomain[_3D], Vector[_3D]](points,points.pointsWithId.toIndexedSeq.map(f => phiVec(i,f._2,phi)))
       DiscreteLowRankGaussianProcess.Eigenpair(lambda(i),v)
     }
-    val mean = DiscreteField[_3D,Vector[_3D]](points,points.points.toIndexedSeq.map(p => gp.mean(p)))
+    val mean = DiscreteField[_3D, UnstructuredPointsDomain[_3D], Vector[_3D]](points,points.points.toIndexedSeq.map(p => gp.mean(p)))
 
-    val r = DiscreteLowRankGaussianProcess[_3D,Vector[_3D]](mean, klBasis)
+    val r = DiscreteLowRankGaussianProcess[_3D, UnstructuredPointsDomain[_3D], Vector[_3D]](mean, klBasis)
     (r,points)
 
   }

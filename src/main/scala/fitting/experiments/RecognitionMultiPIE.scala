@@ -32,7 +32,7 @@ import scala.reflect.io.Path
 object RecognitionMultiPiePose extends App{
   scalismo.initialize()
   val seed = 1986L
-  implicit val rnd = new Random(seed)
+  implicit val rnd = Random(seed)
 
   def fitModel(model:MoMo, modelName: String) = {
     val targetsPath = BU3DDataProvider.repositoryRoot + "/recognition-experiment"
@@ -76,7 +76,7 @@ object RecognitionMultiPiePose extends App{
 object RecognitionMultiPieExpression extends App{
   scalismo.initialize()
   val seed = 1986L
-  implicit val rnd = new Random(seed)
+  implicit val rnd = Random(seed)
 
   def fitModel(model:MoMo, modelName: String) = {
     val targetsPath = "/export/faces/projects/pami-ppm2017/experiments/fit-multipie-recognition/multipie/"

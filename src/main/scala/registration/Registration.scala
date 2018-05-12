@@ -19,10 +19,9 @@ package registration
 import breeze.linalg.DenseVector
 import ch.unibas.cs.gravis.facepipeline._
 import com.typesafe.scalalogging.LazyLogging
-import ch.unibas.cs.gravis.facepipeline.BU3DDataProvider._
-import _root_.registration.utils.VisualLogger
-import _root_.registration.modelbuilding.FaceMask
-import _root_.registration.metrics.HuberDistanceMetric
+import ch.unibas.cs.gravis.facepipeline.BU3DDataProvider.{CoreExpression, Neutral,Sadness,Joy,Disgust,Anger,Fear,Surprise}
+import registration.utils.VisualLogger
+import registration.modelbuilding.FaceMask
 import scalismo.common.{PointId, UnstructuredPointsDomain}
 import scalismo.geometry.{Landmark, Point, _3D}
 import scalismo.mesh.{MeshBoundaryPredicates, TriangleMesh, TriangleMesh3DOperations}
@@ -31,7 +30,7 @@ import scalismo.registration._
 import scalismo.statisticalmodel.{DiscreteLowRankGaussianProcess, StatisticalMeshModel}
 import scalismo.utils.Random
 
-case class Registration(dataProvider: DataProvider) extends PipelineStep with LazyLogging {
+case class Registration(dataProvider: DataProvider)(implicit rng: Random) extends PipelineStep with LazyLogging {
 
   type CoefficientVector = DenseVector[Double]
 
@@ -39,16 +38,16 @@ case class Registration(dataProvider: DataProvider) extends PipelineStep with La
 
   case class LevelConfig(regularizationWeight : Double, outlierThreshold : Option[Double], numBasisFunctions : Int)
 
-  case class OutlierAwarePointSampler(referenceMesh: TriangleMesh[_3D], sampledNumberOfPoints: Int, isValidTargetPoint: Point[_3D] => Boolean)(implicit rand: Random) extends Sampler[_3D] with LazyLogging {
+  case class OutlierAwarePointSampler(referenceMesh: TriangleMesh[_3D], sampledNumberOfPoints: Int, isValidTargetPoint: Point[_3D] => Boolean) extends Sampler[_3D] with LazyLogging {
 
 
-    private val points = UniformMeshSampler3D(referenceMesh, sampledNumberOfPoints).sample()(rand).map(_._1)
+    private val points = UniformMeshSampler3D(referenceMesh, sampledNumberOfPoints).sample().map(_._1)
     private val validPointsOnly = points.filter(isValidTargetPoint)
     override val numberOfPoints: Int = validPointsOnly.size
     logger.info(s"sampling $numberOfPoints points")
     override def volumeOfSampleRegion: Double = referenceMesh.area
 
-    override def sample()(implicit rand: Random): IndexedSeq[(Point[_3D], Double)] = {
+    override def sample(): IndexedSeq[(Point[_3D], Double)] = {
       validPointsOnly.map(p => (p, 1.0 / referenceMesh.area))
     }
 
@@ -57,7 +56,7 @@ case class Registration(dataProvider: DataProvider) extends PipelineStep with La
   def registration(gpModel: StatisticalMeshModel,
                    targetMesh: TriangleMesh[_3D],
                    faceMask : FaceMask,
-                   landmarkPairs: Seq[LandmarkPair]): TriangleMesh[_3D] = {
+                   landmarkPairs: Seq[LandmarkPair])(implicit rng: Random): TriangleMesh[_3D] = {
 
     val referenceMesh = gpModel.referenceMesh
 
@@ -97,7 +96,7 @@ case class Registration(dataProvider: DataProvider) extends PipelineStep with La
                            faceMask: FaceMask,
                            levelConfig : LevelConfig,
                            numberOfIterations: Int,
-                           initialCoefficients: CoefficientVector): CoefficientVector = {
+                           initialCoefficients: CoefficientVector)(implicit rng: Random): CoefficientVector = {
 
     val LevelConfig(regularizationWeight, outlierThreshold,  numBasisFunctions) = levelConfig
 
@@ -158,19 +157,19 @@ case class Registration(dataProvider: DataProvider) extends PipelineStep with La
       isValidTargetPoint(currentFit, targetMesh.operations, targetMeshBoundary))
 
 
-    val config = RegistrationConfiguration[_3D, GaussianProcessTransformationSpace[_3D]](
-      optimizer = LBFGSOptimizer(numIterations = numberOfIterations),
-      metric = HuberDistanceMetric[_3D](optimizationPointSampler),
-      transformationSpace = GaussianProcessTransformationSpace(reducedGPModel.gp.interpolateNearestNeighbor),
-      regularizer = L2Regularizer,
-      regularizationWeight = regularizationWeight)
+    val transformationSpace = GaussianProcessTransformationSpace(reducedGPModel.gp.interpolateNearestNeighbor)
 
     // Scalismo implements registration always as image to image registration.
     // Therefore we compute distance images from the meshes
     val fixedImage = referenceMesh.operations.toDistanceImage
     val movingImage = targetMesh.operations.toDistanceImage
 
-    val registrationIterator = scalismo.registration.Registration.iterations(config)(fixedImage, movingImage, reducedInitialCoefficients)
+    val registrationIterator = new scalismo.registration.Registration(
+      metric = MeanHuberLossMetric[_3D](fixedImage,movingImage,transformationSpace,optimizationPointSampler),
+      regularizer = L2Regularizer(transformationSpace),
+      regularizationWeight = regularizationWeight,
+      optimizer = LBFGSOptimizer(maxNumberOfIterations = numberOfIterations)
+    ).iterator(reducedInitialCoefficients)
     val iteratorWithLogging = for ((regState, itNum) <- registrationIterator.zipWithIndex) yield {
       logger.debug(s"Iteration $itNum: value = ${regState.optimizerState.value}")
       VisualLogger.updateModelView(regState.optimizerState.parameters)
@@ -244,6 +243,7 @@ object Registration {
 
   def main(args: Array[String]): Unit = {
 
+    implicit val rng = Random(1024l)
     scalismo.initialize()
     Registration(BU3DDataProvider).run()
 
