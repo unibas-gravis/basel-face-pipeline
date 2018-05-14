@@ -131,7 +131,7 @@ sbt -mem 40000 "run-main modelbuilding.ModelBuilding"
 First you have to download the Multi-PIE database and copy the necessary files to the correct folders. 
 This is described in the README file in the folder recogniton-experiment (comes with seperate download of the Basel Face Pipeline [Data](https://faces.dmi.unibas.ch/bfm/bfm2017.html)). 
 For those experiments you need the Basel Face Model 2009 and 2017, which can be downloaded at:
-[Download Basel Face Model](https://faces.dmi.unibas.ch/bfm/bfm2017.html)
+[Probabilistic Morphable Models](https://gravis.dmi.unibas.ch/PMM/)
 
 To run the 3D reconstructions from the Multi-PIE database, you may want to execute it multiple times in parallel
 since a single fit taks ~20 minutes:
