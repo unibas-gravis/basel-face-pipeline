@@ -1,15 +1,25 @@
-## Basel Face Registration Pipeline
+# Basel Face Registration Pipeline
 
 This repository contains all the code to reproduce our results from our recent publication:
 - Thomas Gerig, Andreas Morel-Forster, Clemens Blumer, Bernhard Egger, Marcel Lüthi, Sandro Schönborn and Thomas Vetter 
 ["Morphable Face Models - An Open Framework"](https://arxiv.org/abs/1709.08398) 
 IN: arXiv preprint (2017)
 
-### Overview
+## Overview
 
-### 0. Preparation
+After the following information, we list all nescessary steps that you need to take to aquire and prepare the data as well as to run the pipeline and the experiments in the next sections.
 
-#### i) Folder structure and Basel reference mesh
+### Problems under Windows
+
+When you expericence some problems under Windows while importing the data, please use the branch **updateScalismoFaces**.
+
+### Reporting problems and discussion
+
+When you experience problems, you have questions or feedback please use the mailing list for [Morphable face models - an open framework](https://groups.google.com/forum/#!categories/scalismo-faces/morphable-face-models---an-open-framework).
+
+## Preparation
+
+### Step 1: Folder structure and Basel reference mesh
 
 For the registration pipeline and the experiments to work properly, some data, such as reference templates and landmarks are needed. The files are available
 for download at [Registration Pipeline Data](https://faces.dmi.unibas.ch/bfm/bfm2017.html). The download contains the following in detail:
@@ -32,7 +42,7 @@ pipeline-data
 
 If needed, you can change the location of the `pipeline-data` directory in the BU3DDataProvider.scala file.
 
-#### ii) Bu3DFE Database
+### Step 2: Bu3DFE Database
 
 To register the BU-3DFE you have to acquire the dataset here:
 
@@ -40,7 +50,7 @@ To register the BU-3DFE you have to acquire the dataset here:
 
 and copy the `/original` folder to `data/bu3dfe/original/`.
 
-### Sbt (Scala build tool)
+### Step 3: Sbt (Scala build tool)
 
 We assume that you have sbt already installed. If not, please follow the instructions given
 [here](http://www.scala-sbt.org/release/tutorial/Setup.html).
