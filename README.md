@@ -3,7 +3,7 @@
 This repository contains all the code to reproduce our results from our recent publication:
 - Thomas Gerig, Andreas Morel-Forster, Clemens Blumer, Bernhard Egger, Marcel Lüthi, Sandro Schönborn and Thomas Vetter 
 "Morphable Face Models - An Open Framework" ( [edoc-unibas](https://edoc.unibas.ch/69084/) / [IEEE](https://ieeexplore.ieee.org/document/8373814)  )
-IN: arXiv preprint (2017)
+IN: 13th IEEE Conference on Automatic Face and Gesture Recognition (FG 2018) pp. 75-82
 
 ## Overview
 
