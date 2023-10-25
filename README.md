@@ -19,6 +19,10 @@ When you experience problems, you have questions or feedback please use the mail
 
 ## Preparation
 
+### Step 0: Installing a Java Development Kit (JDK)
+
+The project is written in Scala. Scala runs on the JVM and hence you need to install a Java Development Kit to be able to work with this project. The project was testet using Java 8, which you can download from [here](https://adoptium.net/temurin/archive/?version=8). 
+
 ### Step 1: Folder structure and Basel reference mesh
 
 For the registration pipeline and the experiments to work properly, some data, such as reference templates and landmarks are needed. The files are available
